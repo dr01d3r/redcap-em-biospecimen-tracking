@@ -54,6 +54,7 @@ trait ModuleUtils {
         $system_settings["datetime_format"] = $this->getSystemSetting("datetime_format");
         $system_settings["box_name_regex"] = $this->getSystemSetting("box_name_regex");
         $system_settings["specimen_name_regex"] = $this->getSystemSetting("specimen_name_regex");
+        $system_settings["collected_to_processed_minutes_max"] = $this->getSystemSetting("collected_to_processed_minutes_max");
         // process each configuration
         foreach ($system_settings["project_configs"] as $k => $v) {
             // build initial config entry
@@ -61,7 +62,6 @@ trait ModuleUtils {
             $plate_project_id = $system_settings["plate_project_id"][$k];
             $specimen_project_id = $system_settings["specimen_project_id"][$k];
             $shipment_project_id = $system_settings["shipment_project_id"][$k];
-            $use_temp_box_type = $system_settings["use_temp_box_type"][$k] === true;
             $config = [
                 "study_name" => $study_name,
                 "plate_project_id" => $plate_project_id,
@@ -75,6 +75,8 @@ trait ModuleUtils {
                 "datetime_format" => $system_settings["datetime_format"][$k],
                 "box_name_regex" => $system_settings["box_name_regex"][$k],
                 "specimen_name_regex" => $system_settings["specimen_name_regex"][$k],
+                "use_temp_box_type" => $system_settings["use_temp_box_type"][$k] === true,
+                "collected_to_processed_minutes_max" => $system_settings["collected_to_processed_minutes_max"][$k],
                 "errors" => []
             ];
 
@@ -106,8 +108,13 @@ trait ModuleUtils {
             if (empty($config["plate_size"])) {
                 $config["errors"][] = "Configuration value missing: <code>Box Size</code>";
             }
+            if (!empty($config["collected_to_processed_minutes_max"])) {
+                if (!is_numeric($config["collected_to_processed_minutes_max"]) || $config["collected_to_processed_minutes_max"] <= 0) {
+                    $config["errors"][] = "Configuration value <code>[collected_to_processed_minutes_max]</code> invalid.  Must be numeric and greater than zero!";
+                }
+            }
             // only include/validate these fields if [use_temp_box_type] was checked
-            if ($use_temp_box_type) {
+            if ($config["use_temp_box_type"]) {
                 $config["num_visits"] = $system_settings["num_visits"][$k];
                 $config["num_specimens"] = $system_settings["num_specimens"][$k];
                 if (empty($config["num_visits"])) {
@@ -189,14 +196,14 @@ trait ModuleUtils {
     }
 
     /**
-     * @param $project_id
+     * @param int $project_id
      * @return array
      * @throws Exception
      */
     function getConfiguration(int $project_id) : array {
         $this->initConfigurations();
         $result = [];
-        $maps = $this->_project_maps[$project_id];
+        $maps = $this->_project_maps[$project_id] ?? [];
 
         if (empty($maps)) {
             // no usage

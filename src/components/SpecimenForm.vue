@@ -27,10 +27,10 @@
         </template>
 
         <!-- MAIN CONTENT AREA -->
-        <div class="form-row">
+        <div class="row">
             <!-- specimen-id display -->
-            <div class="form-group col mb-0">
-                <label class="col-form-label">Specimen ID</label>
+            <div class="col mb-2">
+                <label class="form-label">Specimen ID</label>
                 <template v-if="mode==='edit'">
                     <b-form-input
                             ref="specimen_id_input"
@@ -60,8 +60,8 @@
                 </b-alert>
             </div>
             <!-- csid -->
-            <div class="form-group col-3 mb-0">
-                <label class="col-form-label">
+            <div class="col-3 mb-2">
+                <label class="form-label">
                     CSID&nbsp;(
                     <input type="checkbox" v-model="csidOverride" tabindex="-1" />
                     <i class="fas fa-info-circle" v-b-popover.hover="'Ignore required validation'"></i>
@@ -86,8 +86,8 @@
                 </b-alert>
             </div>
             <!-- cuid -->
-            <div class="form-group col-3 mb-0">
-                <label class="col-form-label">
+            <div class="col-3 mb-2">
+                <label class="form-label">
                     CUID&nbsp;(
                     <input type="checkbox" v-model="cuidOverride" tabindex="-1" />
                     <i class="fas fa-info-circle" v-b-popover.hover="'Ignore required validation'"></i>
@@ -112,10 +112,10 @@
                 </b-alert>
             </div>
         </div>
-        <div class="form-row">
+        <div class="row">
             <!-- specimen.date_time_collected -->
-            <div class="form-group col-9 mb-0">
-                <label class="col-form-label">Collected Date</label>
+            <div class="col-9 mb-2">
+                <label class="form-label">Collected Date</label>
                 <b-form-datepicker
                         ref="date_collected"
                         v-model="specimen.date_collected"
@@ -123,8 +123,8 @@
                         @input="v$.specimen.time_collected.$touch()"
                 ></b-form-datepicker>
             </div>
-            <div class="form-group col-3 mb-0">
-                <label class="col-form-label">Collected Time</label>
+            <div class="col-3 mb-2">
+                <label class="form-label">Collected Time</label>
                 <b-form-input
                         ref="time_collected"
                         placeholder="i.e. 1600 or 16:00"
@@ -146,12 +146,12 @@
                 </b-alert>
             </div>
         </div>
-        <div class="form-row">
+        <div class="row">
             <!-- specimen mhn fields -->
-            <div class="form-group col-6 mb-0">
-                <div class="form-row">
+            <div class="col-6 mb-2">
+                <div class="row">
                     <div class="col-6">
-                        <label class="col-form-label">MHN</label>
+                        <label class="form-label">MHN</label>
                         <b-form-input
                                 ref="mhn_input"
                                 autocomplete="off"
@@ -163,7 +163,7 @@
                         ></b-form-input>
                     </div>
                     <div class="col-6">
-                        <label class="col-form-label">MHN (verify)</label>
+                        <label class="form-label">MHN (verify)</label>
                         <b-form-input
                                 ref="mhn_verify"
                                 autocomplete="off"
@@ -187,8 +187,8 @@
                 </div>
             </div>
             <!-- specimen.volume -->
-            <div class="form-group col-3 mb-0">
-                <label class="col-form-label">Volume ({{ unitDisplay }})</label>
+            <div class="col-3 mb-2">
+                <label class="form-label">Volume ({{ unitDisplay }})</label>
                 <b-form-input
                         ref="volume_input"
                         autocomplete="off"
@@ -196,6 +196,8 @@
                         :state="v$.specimen.volume.$error ? false : null"
                         @keyup.enter="focusNext"
                         @keydown.enter="focusNext"
+                        @keydown.tab.exact.prevent="focusNext"
+                        @keyup.tab.exact.prevent="focusNext"
                 ></b-form-input>
                 <b-alert variant="danger" class="mt-1 mb-0 px-3 py-2"
                          v-if="v$.specimen.volume.$error"
@@ -208,12 +210,35 @@
                 </b-alert>
             </div>
         </div>
-        <div v-bind:class="'form-row border border-left-0 border-right-0 mt-2 pb-2' + batchModeClass">
+        <div class="row">
+            <!-- comment field -->
+            <div class="col mb-2">
+                <label class="form-label">Comments</label>
+                <b-form-textarea
+                    ref="comment"
+                    autocomplete="off"
+                    v-model="specimen.comment"
+                    :state="v$.specimen.comment.$error ? false : null"
+                    size="sm"
+                    max-rows="6"
+                ></b-form-textarea>
+                <b-alert variant="danger" class="mt-1 mb-0 px-3 py-2"
+                         v-if="v$.specimen.comment.$error"
+                         show
+                >
+                    <strong>Validation Error:</strong>
+                    <ul class="mb-0">
+                        <li v-for="error of v$.specimen.comment.$errors" :key="error.$uid">{{ error.$message }}</li>
+                    </ul>
+                </b-alert>
+            </div>
+        </div>
+        <div v-bind:class="'row border border-left-0 border-start-0 border-right-0 border-end-0 mt-2 py-2' + batchModeClass">
             <div class="col">
-                <div class="form-row">
+                <div class="row">
                     <!-- specimen.date_time_processed -->
-                    <div class="form-group col-9 mb-0">
-                        <label class="col-form-label">Processed Date</label>
+                    <div class="col-9 mb-2">
+                        <label class="form-label">Processed Date</label>
                         <b-form-datepicker
                                 ref="date_processed"
                                 v-model="specimen.date_processed"
@@ -221,8 +246,8 @@
                                 @input="v$.specimen.time_processed.$touch()"
                         ></b-form-datepicker>
                     </div>
-                    <div class="form-group col-3 mb-0">
-                        <label class="col-form-label">Processed Time</label>
+                    <div class="col-3 mb-2">
+                        <label class="form-label">Processed Time</label>
                         <b-form-input
                                 ref="time_processed"
                                 placeholder="i.e. 1600 or 16:00"
@@ -244,10 +269,10 @@
                         </b-alert>
                     </div>
                 </div>
-                <div class="form-row">
+                <div class="row">
                     <!-- specimen.date_time_frozen -->
-                    <div class="form-group col-9 mb-0">
-                        <label class="col-form-label">Frozen Date</label>
+                    <div class="col-9 mb-2">
+                        <label class="form-label">Frozen Date</label>
                         <b-form-datepicker
                                 ref="date_frozen"
                                 v-model="specimen.date_frozen"
@@ -255,8 +280,8 @@
                                 @input="v$.specimen.time_frozen.$touch()"
                         ></b-form-datepicker>
                     </div>
-                    <div class="form-group col-3 mb-0">
-                        <label class="col-form-label">Frozen Time</label>
+                    <div class="col-3 mb-2">
+                        <label class="form-label">Frozen Time</label>
                         <b-form-input
                                 ref="time_frozen"
                                 placeholder="i.e. 1600 or 16:00"
@@ -278,31 +303,10 @@
                         </b-alert>
                     </div>
                 </div>
-                <div class="form-row">
-                    <!-- comment field -->
-                    <div class="form-group col mb-0">
-                        <label class="col-form-label">Comments</label>
-                        <b-form-input
-                                ref="comment"
-                                autocomplete="off"
-                                v-model="specimen.comment"
-                                :state="v$.specimen.comment.$error ? false : null"
-                                @keyup.enter="focusNext"
-                                @keydown.enter="focusNext"
-                        ></b-form-input>
-                        <b-alert variant="danger" class="mt-1 mb-0 px-3 py-2"
-                                 v-if="v$.specimen.comment.$error"
-                                 show
-                        >
-                            <strong>Validation Error:</strong>
-                            <ul class="mb-0">
-                                <li v-for="error of v$.specimen.comment.$errors" :key="error.$uid">{{ error.$message }}</li>
-                            </ul>
-                        </b-alert>
-                    </div>
+                <div class="row">
                     <!-- specimen.tech_initials -->
-                    <div class="form-group col-3 mb-0">
-                        <label class="col-form-label">Processed Tech</label>
+                    <div class="col-3 mb-2">
+                        <label class="form-label">Processed Tech</label>
                         <b-form-input
                                 ref="tech_initials"
                                 autocomplete="off"
@@ -323,7 +327,7 @@
             </div>
         </div>
         <!-- empty spacer row -->
-        <div class="form-row mt-3"></div>
+        <div class="row mt-3"></div>
         <b-alert variant="warning" class="px-3 py-2"
                  v-if="Object.keys(warnings).length"
                  show
@@ -333,24 +337,24 @@
                 <li v-for="(v, k) in warnings">{{ v }}</li>
             </ul>
         </b-alert>
-        <div class="form-row">
-            <div class="col mb-0">
-                <b-button block variant="success" @click.prevent="trySaveSpecimen">
+        <div class="row">
+            <div class="col d-grid mb-0">
+                <button type="button" class="btn btn-block btn-success" @click.prevent="trySaveSpecimen" ref="btn_specimen_save">
                     <i class="fas fa-save"></i>&nbsp;Save
-                </b-button>
+                </button>
             </div>
             <template v-if="resetDisable !== 'true'">
-                <div class="col mb-0">
-                    <b-button block variant="danger" @click.prevent="tryResetSpecimen(false)">
+                <div class="col d-grid mb-0">
+                    <button type="button" class="btn btn-block btn-danger" @click.prevent="tryResetSpecimen(false)">
                         <i class="fas fa-undo"></i>&nbsp;Reset
-                    </b-button>
+                    </button>
                 </div>
             </template>
             <template v-if="batchDisable !== 'true'">
-                <div class="col-3 mb-0">
-                    <b-button block :pressed.sync="batchEnabled" variant="warning" class="text-white">
+                <div class="col-3 d-grid mb-0">
+                    <button type="button" class="btn btn-block btn-warning text-white" @click.prevent="toggleBatchMode">
                         <i class="fas fa-sync"></i>&nbsp;Batch Mode: {{ batchMode }}
-                    </b-button>
+                    </button>
                 </div>
             </template>
         </div>
@@ -535,7 +539,8 @@
                 dateFormat: 'YYYY-MM-DD HH:mm',
                 luxonDateFormatFrom: 'yyyy-MM-dd HH:mm',
                 maxDate: DateTime.now().toFormat('yyyy-MM-dd'),
-                limitCollToProc: 30,
+                limitCollToProcMin: 30,
+                limitCollToProcMaxDefault: 1080,
                 limitProcToFroz: 10,
                 timeFormat: /^(?<hour>[01][0-9]|2[0-3])(?<separator>:)?(?<minute>[0-5][0-9])$/,
                 csidFormat: /^\d{10}$/,
@@ -674,6 +679,9 @@
                     this.specimen.date_frozen = parts[0];
                     this.specimen.time_frozen = parts[1];
                 }
+            },
+            limitCollToProcMax: function() {
+                return (this.config && this.config.collected_to_processed_minutes_max) ? this.config.collected_to_processed_minutes_max : this.limitCollToProcMaxDefault;
             },
             batchMode: function() {
                 return this.batchEnabled ? 'On' : 'Off';
@@ -843,7 +851,7 @@
                             this.$nextTick(() => {
                                 this.v$.specimen.name.$validate();
                             });
-                        } else {
+                        } else if (this.validateParticipantTemporaryBox(data)) {
                             // specimen move, validate target well position
                             /*
                                 data.plate.box_name
@@ -910,19 +918,36 @@
                         this.focusOverride = false;
                         break;
                     case "participant":
-                        // TODO for temporary box_type ('00'), error if specimen lives in another box
+                        // additional validation based on match data from the server
+                        if (!this.validateParticipantTemporaryBox(data)) return;
+                        // validate visit order
+                        let this_visit = parseInt(data.parsed_value.visit);
+                        if (data.max_visit !== null && this_visit < data.max_visit) {
+                            Object.assign(this.vuelidateExternalResults, {
+                                specimen: {
+                                    name: [ `Visit sequence error - Expected: >= ${data.max_visit}, Actual: ${this_visit}` ]
+                                }
+                            });
+                            this.$nextTick(() => {
+                                this.v$.specimen.name.$validate();
+                            });
+                            return;
+                        }
+                        // found a valid match, so prefill
                         this.specimen.mhn = data.specimen.mhn;
                         this.specimen.mhn_verify = data.specimen.mhn;
                         this.toast(
                             'Pre-filling MHN based on Participant-only match',
                             'Participant Match (' + data.specimen.name + ')',
-                            'info',
-                            10000
+                            'info'
                         );
                         this.focusOverride = false;
                         this.focusElement('csid_input');
                         break;
                     case "full":
+                        // additional validation based on match data from the server
+                        if (!this.validateParticipantTemporaryBox(data)) return;
+                        // found a valid match, so prefill
                         this.specimen.mhn = data.specimen.mhn;
                         this.specimen.mhn_verify = data.specimen.mhn;
                         this.dateTimeCollected = data.specimen.date_time_collected;
@@ -933,8 +958,7 @@
                         this.toast(
                             'Pre-filling all fields based on Participant/Visit/SampleType match.',
                             'Full Match (' + data.specimen.name + ')',
-                            'info',
-                            10000
+                            'info'
                         );
                         this.focusOverride = false;
                         // blind disable batch mode since we're copying data into batch fields
@@ -955,6 +979,43 @@
                         break;
                 }
                 this.v$.specimen.name.$reset();
+            },
+            isTemporaryBoxType: function(plate) {
+                return plate && plate.box_name_parsed.box_type === '00';
+            },
+            /**
+             * Ensure the scanned specimen can be placed in this box.
+             * - No other temporary box exists that this specimen *should* go in
+             * @param data
+             * @returns {boolean} True if the box is valid or the project does not use temporary boxes
+             */
+            validateParticipantTemporaryBox: function(data) {
+                // BOTH boxes have to be temporary ('00') for this validation to fail
+                // don't use the specimen box as this "closest" specimen may be invalid for other validation reasons
+                let isValid = true;
+                if (this.config.use_temp_box_type === true
+                    && data.other_boxes && Object.values(data.other_boxes).length > 0
+                    && this.isTemporaryBoxType(this.box_info)
+                ) {
+                    // loop through all "other" boxes to see if one exists where this specimen belongs
+                    for (const b of Object.values(data.other_boxes)) {
+                        if (this.isTemporaryBoxType(b) && b.record_id !== this.box_record_id) {
+                            isValid = false;
+                            break;
+                        }
+                    }
+                    if (!isValid) {
+                        Object.assign(this.vuelidateExternalResults, {
+                            specimen: {
+                                name: [ 'Temporary "00" Box Error - One or more specimens for this participant exist in another box!' ]
+                            }
+                        });
+                        this.$nextTick(() => {
+                            this.v$.specimen.name.$validate();
+                        });
+                    }
+                }
+                return isValid;
             },
             validateCSIDCallback: function(data) {
                 if (data.isValid !== true) {
@@ -1017,6 +1078,12 @@
                     this.validateCSID(this.specimen.name, this.specimen.csid);
                 }
             },
+            appendComment: function(comments = [], separator = '\n') {
+                if (this.specimen.comment && this.specimen.comment.length > 0) {
+                    comments.unshift(this.specimen.comment);
+                }
+                this.specimen.comment = comments.join(separator);
+            },
             resetSpecimen: function(preserveName = false, preservePosition = false) {
                 this.specimen = {
                     record_id: null,
@@ -1027,13 +1094,13 @@
                     time_collected: null,
                     mhn: null,
                     mhn_verify: null,
+                    volume: this.config.default_volume ?? null,
+                    comment: null,
                     date_processed: this.batchEnabled ? this.specimen.date_processed : null,
                     time_processed: this.batchEnabled ? this.specimen.time_processed : null,
                     date_frozen: this.batchEnabled ? this.specimen.date_frozen : null,
                     time_frozen: this.batchEnabled ? this.specimen.time_frozen : null,
-                    volume: this.config.default_volume ?? null,
                     tech_initials: this.batchEnabled ? this.specimen.tech_initials : null,
-                    comment: this.batchEnabled ? this.specimen.comment : null,
                     box_position: preservePosition ? this.specimen.box_position : null
                 };
                 this.csidOverride = false;
@@ -1099,13 +1166,17 @@
                             warnings.push(h('li', value));
                         }
                         const ack = h('div', void 0, [
-                            h('p', { class: [ 'lead' ] }, 'The following warnings exist.  Please review prior to saving this specimen.'),
-                            h('ul', void 0, warnings)
+                            h('p', { class: [ 'lead' ] }, [
+                                'The following ',
+                                h('strong', { class: [ 'text-danger', 'text-uppercase' ]}, 'warnings'),
+                                ' exist.  Please review prior to saving this specimen.'
+                            ]),
+                            h('ul', { class: [ 'font-weight-bold' ]}, warnings)
                         ]);
                         // show confirmation dialog
                         await this.$bvModal.msgBoxConfirm([ack], {
                             size: 'lg',
-                            title: `Save Warning Acknowledgement`,
+                            title: `Save Acknowledgement`,
                             headerBgVariant: 'warning',
                             headerBorderVariant: 'secondary',
                             headerTextVariant: 'dark',
@@ -1118,7 +1189,14 @@
                             centered: true
                         })
                         .then(value => {
-                            if (value !== true) {
+                            if (value === true) {
+                                const pfx = `[${DateTime.now().toFormat(this.luxonDateFormatFrom)}][${OrcaBiospecimenTracking().userid}]`;
+                                let comments = [];
+                                for (const c of Object.values(this.warnings)) {
+                                    comments.push(`${pfx} - ${c}`);
+                                }
+                                this.appendComment(comments);
+                            } else {
                                 // do not save specimen
                                 okToSave = false;
                             }
@@ -1192,10 +1270,16 @@
                                 case 'time_collected':  this.focusElement('mhn_input'); break;
                                 case 'mhn_input':       this.focusElement('mhn_verify'); break;
                                 case 'mhn_verify':      this.focusElement('volume_input'); break;
-                                case 'volume_input':    this.focusElement('date_processed'); break;
+                                case 'volume_input':    this.focusElement('comment'); break;
+                                case 'comment':
+                                    if (this.batchEnabled) {
+                                        this.focusElement('btn_specimen_save');
+                                    } else {
+                                        this.focusElement('date_processed');
+                                    }
+                                    break;
                                 case 'time_processed':  this.focusElement('date_frozen'); break;
-                                case 'time_frozen':     this.focusElement('comment'); break;
-                                case 'comment':         this.focusElement('tech_initials'); break;
+                                case 'time_frozen':     this.focusElement('tech_initials'); break;
                             }
                         }
                         break;
@@ -1212,16 +1296,20 @@
                 if (this.warnings.hasOwnProperty("prod_to_froz_fail")) {
                     delete this.warnings["prod_to_froz_fail"];
                 }
-                // collected -> processed >= 30 minutes
+                // collected -> processed >= 30 minutes && <= 18 hours
                 if (dt1 !== null && dt2 !== null) {
                     const diff1 = Interval.fromDateTimes(
                         DateTime.fromFormat(dt1, this.luxonDateFormatFrom),
                         DateTime.fromFormat(dt2, this.luxonDateFormatFrom)
                     );
-                    if (diff1.length("minutes") < this.limitCollToProc) {
+                    if (diff1.length("minutes") < this.limitCollToProcMin) {
                         this.warnings["coll_to_proc_fail"] = "Collected to Processed time ("
                             + diff1.toDuration(['hours', 'minutes']).toHuman()
-                            + ") must be at least " + this.limitCollToProc + " minutes";
+                            + ") must be at least " + this.limitCollToProcMin + " minutes";
+                    } else if (diff1.length("minutes") > this.limitCollToProcMax) {
+                        this.warnings["coll_to_proc_fail"] = "Collected to Processed time ("
+                            + diff1.toDuration(['hours', 'minutes']).toHuman()
+                            + ") cannot exceed " + (this.limitCollToProcMax / 60) + " hours";
                     }
                 }
                 // processed -> frozen <= 10 minutes
@@ -1236,6 +1324,9 @@
                             + ") must be at least " + this.limitProcToFroz + " minutes";
                     }
                 }
+            },
+            toggleBatchMode: function() {
+                this.batchEnabled = !this.batchEnabled;
             }
         }
     }
@@ -1247,5 +1338,8 @@
     }
     .alert ul {
         padding-inline-start: 15px;
+    }
+    .font-size-smaller {
+        font-size: 0.875rem;
     }
 </style>

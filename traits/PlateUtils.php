@@ -42,53 +42,47 @@ trait PlateUtils {
     }
 
     /**
-     * @param $plate_id
+     * @param string $plate_id
      * @param string $box_name_regex
      * @return array
      * @throws Exception
      */
-    function getPlate($plate_id, string $box_name_regex) {
+    function getPlate(string $plate_id, string $box_name_regex)
+    {
         if (!is_numeric($plate_id)) return [];
-        $project = $this->getPlateProject();
-
-        // get all plate info by record
-        // get all plate info by record
-        $records = \REDCap::getData([
-            "project_id" => $project->project_id,
-            "records" => [ $plate_id ]
-        ]);
-        if (count($records) === 1 && isset($records[$plate_id])) {
-            $tmp = $records[$plate_id][$project->firstEventId];
-            $tmp["box_name_parsed"] = $this->parsePlateName($tmp["box_name"], $box_name_regex);
-            return $tmp;
-        }
-        return [];
+        return $this->getPlates($plate_id, $box_name_regex)[$plate_id];
     }
 
     /**
-     * @deprecated users no longer have the option of selecting plates
-     * @param null $selected_type
+     * @param $plate_ids
+     * @param string $box_name_regex
      * @return array
      * @throws Exception
      */
-    function getPlateSelectionInfo($selected_type = null) {
-        $plate_project = $this->getPlateProject();
-        $plates = [];
-        $records = \REDCap::getData([
-            "project_id" => $plate_project->project_id,
-            "fields" => [
-                "box_name",
-                "box_type"
-            ],
-        ]);
-        foreach ($records as $record_id => $record) {
-            $plate_info = $record[$plate_project->firstEventId];
-            if ($selected_type !== null && $plate_info["box_type"] !== $selected_type) {
-                continue;
-            }
-            $plates[$record_id] = $plate_info["box_name"];
+    function getPlates($plate_ids, string $box_name_regex)
+    {
+        if (empty($plate_ids)) return [];
+        if (!is_array($plate_ids)) {
+            $plate_ids = [ $plate_ids ];
         }
-        return array_reverse($plates, true);
+
+        if (count($plate_ids)) {
+            $results = [];
+            $project = $this->getPlateProject();
+            // get all plate info by record
+            $records = \REDCap::getData([
+                "project_id" => $project->project_id,
+                "records" => $plate_ids
+            ]);
+            // process the records
+            foreach ($records as $record_id => $record) {
+                $tmp = $record[$project->firstEventId];
+                $tmp["box_name_parsed"] = $this->parsePlateName($tmp["box_name"], $box_name_regex);
+                $results[$record_id] = $tmp;
+            }
+            return $results;
+        }
+        return [];
     }
 
     function parsePlateName($name, $regex) : array {
@@ -113,25 +107,32 @@ trait PlateUtils {
         try {
             // prep some helper info for validation \ plate visuals
             $plate_size = $this->_config["plate_size_map"][$system_config["plate_size"]];
-            // participant width & height for this box config
-            $pw = floor($plate_size["col"] / $system_config["num_visits"]);
-            $ph = floor($plate_size["row"] / $system_config["num_specimens"]);
-            // TODO some config entries should be omitted or given default value based on box_type
+
+            // some config entries should be omitted or given default value based on box_type
             $response["config"] = [
                 "fields" => array_column($this->getPlateProject()->metadata, "element_label", "field_name"),
                 "box_type" => $this->getDictionaryValuesFor($this->getPlateProject()->project_id, "box_type"),
                 "alphabet" => range('A', 'Z'),
                 "plate_size" => $plate_size,
-                "num_visits" => $system_config["num_visits"],
-                "num_specimens" => $system_config["num_specimens"],
-                "max_participants" => $pw * $ph,
+                "use_temp_box_type" => $system_config["use_temp_box_type"],
                 "box_name_regex" => $system_config["box_name_regex"],
                 "specimen_name_regex" => $system_config["specimen_name_regex"],
                 "default_volume" => $system_config["default_volume"],
+                "collected_to_processed_minutes_max" => $system_config["collected_to_processed_minutes_max"],
                 "datetime_format" => $system_config["datetime_format"],
                 "shipment_dashboard_base_url" => $this->getUrl("views/shipment.php"),
-                "sample_type_units" => $this->_config["sample_type_units"]
+                "sample_type_units" => $this->_config["sample_type_units"],
             ];
+
+            // temporary "00" box related configurations
+            if ($system_config["use_temp_box_type"] === true) {
+                $response["config"]["num_visits"] = $system_config["num_visits"];
+                $response["config"]["num_specimens"] = $system_config["num_specimens"];
+                // participant width & height for this box config
+                $pw = floor($plate_size["col"] / $system_config["num_visits"]);
+                $ph = floor($plate_size["row"] / $system_config["num_specimens"]);
+                $response["config"]["max_participants"] = $pw * $ph;
+            }
 
             // prep new box url
             $new_box_id = \DataEntry::getAutoId($this->getPlateProject()->project_id);

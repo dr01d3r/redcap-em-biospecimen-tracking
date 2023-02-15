@@ -28,21 +28,38 @@
         </template>
 
         <!-- MAIN CONTENT AREA -->
-        <b-pagination
-                v-model="currentPage"
-                :total-rows="rows"
-                :per-page="perPage"
-                aria-controls="specimen-search"
-        ></b-pagination>
-        <b-table
-                id="specimen-search"
-                :items="sortedSpecimens"
-                :fields="specimenFields"
-                :per-page="perPage"
-                :current-page="currentPage"
-                responsive
-        ></b-table>
-
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col">
+                        <span class="lead">This dashboard is a full output of all specimens and their related data.</span>
+                        <hr class="my-1">
+                        <span class="text-muted">The primary purpose of this dashboard is to make the data exportable.</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div>
+                    <table id="report-table" class="table mb-0 display" style="width:100%">
+                        <thead>
+                        <tr>
+                            <th scope="col">Box</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Date/Time Collected</th>
+                            <th scope="col">Volume</th>
+                            <th scope="col">MHN</th>
+                            <th scope="col">Date/Time Processed</th>
+                            <th scope="col">Tech Initials</th>
+                            <th scope="col">Date/Time Frozen</th>
+                            <th scope="col">CSID</th>
+                            <th scope="col">CUID</th>
+                            <th scope="col">Comment</th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
         <template v-if="debugMsg != null">
             <pre class="well">{{ debugOutput }}</pre>
         </template>
@@ -65,68 +82,53 @@
                 isOverlayed: false,
                 specimens: [],
                 perPage: 50,
-                currentPage: 1,
+                currentPage: 1
             }
         },
         methods: {
-            async initializeDashboard() {
-                this.isOverlayed = true;
-                this.axios({
-                    url: OrcaBiospecimenTracking().url,
-                    params: {
-                        action: 'initialize-report-dashboard'
-                    }
-                })
-                .then(response => {
-                    this.config = response.data.config;
-                    this.specimens = response.data.specimens ?? [];
-                    // debug
-                    // this.debugMsg = response;
-                })
-                .catch(e => {
-                    let errorMsg = 'An unknown error occurred';
-                    if (e.response.data) {
-                        errorMsg = e.response.data;
-                    }
-                    if (typeof errorMsg === 'string') {
-                        errorMsg = [ errorMsg ];
-                    }
-                    this.errors = Object.assign(this.errors, errorMsg);
-                })
-                .finally(() => {
-                    setTimeout(() => {
-                        this.isOverlayed = false;
-                    }, 250);
+            initializeDataTable() {
+                // DataTable initialization
+                this.dataTable = $("#report-table").DataTable({
+                    // iDisplayLength: this.perPage,
+                    ajax: OrcaBiospecimenTracking().url + '&action=get-specimen-report-data',
+                    deferRender: true,
+                    columns: [
+                        { data: 'box_name.value' },
+                        { data: 'name.value' },
+                        { data: {
+                            _: 'date_time_collected.value',
+                            sort: 'date_time_collected.__SORT__'
+                            } },
+                        { data: 'volume.value' },
+                        { data: 'mhn.value' },
+                        { data: {
+                                _: 'date_time_processed.value',
+                                sort: 'date_time_collected.__SORT__'
+                            } },
+                        { data: 'tech_initials.value' },
+                        { data: {
+                                _: 'date_time_frozen.value',
+                                sort: 'date_time_collected.__SORT__'
+                            } },
+                        { data: 'csid.value' },
+                        { data: 'cuid.value' },
+                        { data: 'comment.value' },
+                    ],
+                    dom: 'Bfrtip',
+                    buttons: [
+                        'excelHtml5'
+                    ],
                 });
             }
         },
         computed: {
             debugOutput: function() {
                 return JSON.stringify(this.debugMsg, null, '\t');
-            },
-            sortedSpecimens: function() {
-                if (this.specimens.sort) {
-                    return this.specimens.sort((a, b) => {
-                        if (a.name < b.name) { return -1; }
-                        if (a.name > b.name) { return 1; }
-                        return 0;
-                    });
-                }
-                return this.specimens;
-            },
-            specimenFields: function() {
-                if (this.config && this.config.specimen_fields) {
-                    return this.config.specimen_fields;
-                }
-                return [];
-            },
-            rows: function() {
-                return this.specimens.length
             }
         },
         mounted() {
             this.$nextTick(function () {
-                this.initializeDashboard();
+                this.initializeDataTable();
             });
         }
     }

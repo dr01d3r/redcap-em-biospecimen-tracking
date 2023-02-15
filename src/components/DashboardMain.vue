@@ -11,7 +11,7 @@
         </template>
 
         <div class="projhdr">
-            <i class="fas fa-vials text-dark"></i>&nbsp;Box Processing Dashboard
+            <i class="fas fa-vials text-dark"></i>&nbsp;Sample Entry Dashboard
             <template v-if="config.box_record_home_url != null">
                 <span>&nbsp;|&nbsp;</span><a :href="config.box_record_home_url" class="text-primary ml-1"><i class="fas fa-share"></i>&nbsp;Record Home</a>
             </template>
@@ -38,23 +38,25 @@
             <div class="card-header">
                 <div class="row">
                     <div class="col">
-                        <div class="form-group mb-0">
+                        <div class="mb-2">
                             <label class="col-form-label">Selected Box</label>
                             <template v-if="showButtonNewBox">
-                                <b-button variant="success" size="xs" :href="config.new_plate_url" class="text-light"><i class="fas fa-plus"></i>&nbsp;New</b-button>
+                                <a class="btn btn-xs btn-success text-light" :href="config.new_plate_url"><i class="fas fa-plus"></i>&nbsp;New</a>
                             </template>
                             <template v-if="showButtonSearch">
-                                <b-button variant="primary" size="xs" @click="togglePlateSearch"><i class="fas fa-search"></i>&nbsp;Search</b-button>
+                                <button class="btn btn-xs btn-primary" @click="togglePlateSearch"><i class="fas fa-search"></i>&nbsp;Search</button>
                                 <input type="text" :value="plate.box_name" class="form-control" readonly="readonly" />
                             </template>
                             <template v-if="showButtonCancel">
-                                <b-button variant="danger" size="xs" @click="togglePlateSearch"><i class="fas fa-times"></i>&nbsp;Cancel</b-button>
+                                <button class="btn btn-xs btn-danger" @click="togglePlateSearch"><i class="fas fa-times"></i>&nbsp;Cancel</button>
                             </template>
-                            <b-form id="form_plate_search" @submit.stop.prevent="trySearchPlate" v-if="showPlateSearch">
+                            <b-form id="form_plate_search" @submit.prevent v-if="showPlateSearch">
                                 <b-form-input
                                         id="plate_search_input"
                                         ref="plate_search_input"
                                         autocomplete="off"
+                                        @keyup.enter="trySearchPlate"
+                                        @blur="trySearchPlate"
                                         v-model="plate_search"
                                         :state="v$.plate_search.$error ? false : null"
                                         placeholder="Scan or Type the Box Name"
@@ -83,18 +85,18 @@
                         <b-alert variant="warning" class="border border-warning mt-3" v-if="isPlateFull" show>Specimen Entry Disabled!  The box is full.</b-alert>
                     </div>
                     <template v-if="plate && config && config.plate_size && config.alphabet">
-                        <div class="col-auto border-left">
+                        <div class="col-auto border-left border-start">
                             <label class="col-form-label">Box Preview</label>
                             <div class="plate-preview border border-dark" v-bind:class="[ plateClass() ]">
-                                <div class="row text-center font-weight-bold table-dark no-gutters">
+                                <div class="row text-center font-weight-bold bg-dark text-light no-gutters g-0">
                                     <div class="col-header py-2">#</div>
                                     <template v-for="col in config.plate_size.col">
                                         <div class="col-header py-2">{{ col }}</div>
                                     </template>
                                 </div>
                                 <template v-for="(row, rowKey) in wells">
-                                    <div class="row no-gutters">
-                                        <div class="row-header table-dark font-weight-bold py-2">
+                                    <div class="row no-gutters g-0">
+                                        <div class="row-header bg-dark text-light font-weight-bold py-2">
                                             <span>{{ rowKey }}</span>
                                         </div>
                                         <template v-for="(well, colKey) in row">

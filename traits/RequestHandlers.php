@@ -116,7 +116,7 @@ trait RequestHandlers {
     }
 
     /**
-     * Returns back a list of shipments.
+     * Returns a list of shipments.
      * @since 1.0.1
      */
     public function searchShipments() {

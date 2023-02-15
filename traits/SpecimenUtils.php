@@ -5,13 +5,12 @@ namespace ORCA\BiospecimenTracking;
 use Exception;
 
 trait SpecimenUtils {
-
     private $_allowed_specimen_name_parts = [
-        "year" => true,
-        "participant_id" => true,
-        "visit" => true,
-        "sample_type" => true,
-        "aliquot_number" => true
+        "year"              => "__YEAR__",
+        "participant_id"    => "__PARTICIPANT_ID__",
+        "visit"             => 0,
+        "sample_type"       => "__SAMPLE_TYPE__",
+        "aliquot_number"    => "__ALIQUOT_NUMBER__"
     ];
 
     /**
@@ -55,16 +54,36 @@ trait SpecimenUtils {
         return $fields;
     }
 
+    /**
+     * @param array $system_config
+     * @return array
+     * @throws Exception
+     */
     function getAllSpecimens(array $system_config) {
         $result = [];
+        // get basic box info
+        $box_data = \REDCap::getData([
+            "project_id" => $this->getPlateProject()->project_id,
+            "records" => [],
+            "fields" => [
+                "box_name"
+            ]
+        ]);
         // get the specimen info
         $specimen_data = \REDCap::getData([
             "project_id" => $this->getSpecimenProject()->project_id,
             "records" => []
         ]);
         foreach ($specimen_data as $record_id => $data) {
-            $specimen = $specimen_data[$record_id][$this->getSpecimenProject()->firstEventId];
-            $specimen["name_parsed"] = $this->parseSpecimenName($specimen["name"], $system_config["specimen_name_regex"]);
+            $specimen = $data[$this->getSpecimenProject()->firstEventId];
+//            $specimen["name_parsed"] = $this->parseSpecimenName($specimen["name"], $system_config["specimen_name_regex"]);
+            // get box_name, if we can find it
+            if (!empty($specimen["box_record_id"]) && isset($box_data[$specimen["box_record_id"]])) {
+                $specimen["box_name"] = $box_data[$specimen["box_record_id"]][$this->getPlateProject()->firstEventId]["box_name"];
+            }
+            foreach ($specimen as $field_name => $field_value) {
+                $specimen[$field_name] = $this->getFieldDisplayValue($this->getSpecimenProject(), $field_name, $field_value);
+            }
             $result[] = $specimen;
         }
         return $result;
@@ -212,35 +231,38 @@ AND value = ?";
     }
 
     function handleSearchSpecimen(string $search_value, array $system_config) {
-        if ($search_value === null || empty($search_value)) {
+        if (empty($search_value)) {
             $this->sendError("No search value provided.");
         }
         try {
             $tmp = [
                 "specimens" => [],
+                "boxes" => [],
                 "lookup" => []
             ];
             // prepare the response
             $response = [
                 "search_value" => $search_value,
                 "parsed_value" => $this->parseSpecimenName($search_value, $system_config["specimen_name_regex"]),
-                "match_type" => null
+                "match_type" => null,
+                "max_visit" => null
             ];
             // use raw sql initially for fast search by participant_id
-            $sql = "SELECT record, value
-FROM redcap_data
-WHERE project_id = ?
-AND field_name = 'name'
-AND value REGEXP ?";
+            $sql = "SELECT d1.record, d1.value 'name', d2.value 'box_record_id'
+FROM redcap_data d1
+JOIN redcap_data d2 ON d1.project_id = d2.project_id AND d1.record = d2.record AND d2.field_name = 'box_record_id'
+WHERE d1.project_id = ?
+AND d1.field_name = 'name'
+AND d1.value REGEXP ?";
             $participant_id = $response["parsed_value"]["participant_id"];
             // # delimits the pattern since we need to treat the () as literals
             // the 2nd pattern clears out any remaining capture group syntax that isn't sql compatible
             $patterns = [ "#\(\?\<participant_id\>.*?\)#", "(\?\<\w*\>)" ];
             $replacements = [ $participant_id, "" ];
             $sql_name_regex = preg_replace($patterns, $replacements, $system_config["specimen_name_regex"]);
-            // debug
-//            $response["specimen_name_regex"] = $system_config["specimen_name_regex"];
-//            $response["sql_name_regex"] = $sql_name_regex;
+            // TODO debug
+            $response["specimen_name_regex"] = $system_config["specimen_name_regex"];
+            $response["sql_name_regex"] = $sql_name_regex;
 
             $specimen_query_result = $this->query($sql,
                 [
@@ -250,31 +272,70 @@ AND value REGEXP ?";
             );
             // rebuild result into temporary dataset
             while($r = db_fetch_assoc($specimen_query_result)) {
-                $tmp["specimens"][$r["value"]] = $r["record"];
-                $r["parsed"] = $this->parseSpecimenName($r["value"], $system_config["specimen_name_regex"]);
-                // lookup => participant_id -> visit -> sample_type
-                $tmp["lookup"]
-                [$r["parsed"]["participant_id"]]
-                [$r["parsed"]["visit"]]
-                [$r["parsed"]["sample_type"]]
-                [] = $r["record"];
+                // specimen lookup by name
+                $tmp["specimens"][$r["name"]] = $r["record"];
+                // parsed specimen name lookup
+                $r["parsed"] = $this->parseSpecimenName($r["name"], $system_config["specimen_name_regex"]);
+                // lookup => year | participant_id | sample_type | visit
+                $tmp_key_1 = $r["parsed"]["year"] ?? $this->_allowed_specimen_name_parts["year"];
+                $tmp_key_2 = $r["parsed"]["participant_id"] ?? $this->_allowed_specimen_name_parts["participant_id"];
+                $tmp_key_3 = $r["parsed"]["sample_type"] ?? $this->_allowed_specimen_name_parts["sample_type"];
+                $tmp_key_4 = $r["parsed"]["visit"] ?? $this->_allowed_specimen_name_parts["visit"];
+                // add record to lookup array
+                $tmp["lookup"][$tmp_key_1][$tmp_key_2][$tmp_key_3][$tmp_key_4][] = $r["record"];
+                // box lookup by specimen record_id
+                // only matters if we're working with temporary "00" boxes
+                if ($system_config["use_temp_box_type"] === true) {
+                    $tmp["boxes"][$r["record"]] = $r["box_record_id"];
+                }
             }
             // determine if an exact match was found
             if (isset($tmp["specimens"][$search_value])) {
                 $response["match_type"] = "exact";
                 $specimen_record_id = $tmp["specimens"][$search_value];
+                // we don't want to consider the exact specimen's box in downstream logic
+                unset($tmp["boxes"][$specimen_record_id]);
             } else if (count($tmp["specimens"]) > 0) {
                 // attempt to find a full match
-                $tmp_participant_arr = $tmp["lookup"][$response["parsed_value"]["participant_id"]];
-                $specimen_record_id = reset($tmp_participant_arr
-                    [$response["parsed_value"]["visit"]]
-                    [$response["parsed_value"]["sample_type"]]
-                );
+                // ---
+                // year
+                $tmp_match_1 = $tmp["lookup"][$response["parsed_value"]["year"] ?? $this->_allowed_specimen_name_parts["year"]] ?? [];
+                // sample_types by participant_id
+                // year | participant_id
+                $tmp_match_2 = $tmp_match_1[$response["parsed_value"]["participant_id"] ?? $this->_allowed_specimen_name_parts["participant_id"]] ?? [];
+                // visits by sample_type
+                // year | participant_id | sample_type
+                $tmp_match_3 = $tmp_match_2[$response["parsed_value"]["sample_type"] ?? $this->_allowed_specimen_name_parts["sample_type"]] ?? [];
+                // records by visit
+                // year | participant_id | sample_type | visit
+                $tmp_match_4 = $tmp_match_3[$response["parsed_value"]["visit"] ?? $this->_allowed_specimen_name_parts["visit"]] ?? [];
+                // if the final match group has at least one entry, we've found a 'full' match
+                $specimen_record_id = reset($tmp_match_4);
                 if (!empty($specimen_record_id)) {
                     $response["match_type"] = "full";
-                } else {
+                } else if (!empty($tmp_match_3)) {
+                    // grab the highest visit number
+                    $max_visit = (int)max(array_keys($tmp_match_3));
+                    $response["max_visit"] = $max_visit;
                     // grab the first record that matches only participant_id
-                    $specimen_record_id = reset(reset(reset($tmp_participant_arr)));
+                    // ---
+                    $tmp_match_3a = reset($tmp_match_3) ?? [];
+                    // this will be a record_id or null
+                    $specimen_record_id = reset($tmp_match_3a);
+                    // if it isn't empty, then we found a 'participant' match
+                    if (!empty($specimen_record_id)) {
+                        $response["match_type"] = "participant";
+                    }
+                } else if (!empty($tmp_match_2)) {
+                    // grab the first record that matches only participant_id
+                    // ---
+                    // visits
+                    $tmp_match_2a = reset($tmp_match_2) ?? [];
+                    // records
+                    $tmp_match_2b = reset($tmp_match_2a) ?? [];
+                    // this will be a record_id or null
+                    $specimen_record_id = reset($tmp_match_2b);
+                    // if it isn't empty, then we found a 'participant' match
                     if (!empty($specimen_record_id)) {
                         $response["match_type"] = "participant";
                     }
@@ -288,8 +349,19 @@ AND value REGEXP ?";
                     "records" => [ $specimen_record_id ]
                 ]);
                 $response["specimen"] = $specimen_data[$specimen_record_id][$this->getSpecimenProject()->firstEventId];
-                // get the current plate
+                // get the box of the closest matching specimen
                 $response["plate"] = $this->getPlate($response["specimen"]["box_record_id"], $system_config["box_name_regex"]);
+            }
+            // if this project uses temp "00" boxes
+            // get the 'other_boxes' associated with this specimen
+            if ($system_config["use_temp_box_type"] === true && !empty($tmp["boxes"])) {
+                // get the plates of all 'family' specimens
+                $other_boxes = $this->getPlates(array_unique($tmp["boxes"]), $system_config["box_name_regex"]);
+                // downstream validation only cares if the box is temporary "00" AND is a valid destination for the scanned specimen
+                // basic filter by sample_type
+                $response["other_boxes"] = array_filter($other_boxes, function($p) use($response) {
+                    return $p["box_type"] === "00" && $p["sample_type"] == $response["parsed_value"]["sample_type"];
+                }) ?? [];
             }
             $this->sendResponse($response);
         } catch (Exception $ex) {

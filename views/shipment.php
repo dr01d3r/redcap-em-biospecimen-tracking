@@ -15,3 +15,4 @@ $module->addTime();
     <script src="<?= $module->getUrl('dist/pages/shipment/app.js') ?>"></script>
     <link rel="stylesheet" href="<?= $module->getUrl('dist/pages/shipment/style.css') ?>">
 <?php
+$module->outputModuleVersionJS();

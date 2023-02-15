@@ -5,7 +5,7 @@ export default {
         qs
     },
     methods: {
-        toast(msg, title, variant, duration = 5000, toaster = 'b-toaster-top-right') {
+        toast(msg, title, variant, duration = 5000, toaster = 'b-toaster-bottom-right') {
             this.$bvToast.toast(msg, {
                 title: title,
                 variant: variant,

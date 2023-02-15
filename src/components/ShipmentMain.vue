@@ -112,8 +112,8 @@
                         <td>{{ bv['box_type'] }}</td>
                         <td>{{ bv['sample_type'] }}</td>
                         <td>
-                            <a v-if="!isReadOnly" href="javascript:void(0)" @click.prevent="removeBox(bv)" class="btn btn-xs btn-danger text-light" title="Remove Box"><i class="fas fa-times"></i></a>
-                            <a href="javascript:void(0)" @click.prevent="boxDashboard(bv)" class="btn btn-xs btn-primary text-light" title="Go to Box Dashboard"><i class="fas fa-vials"></i></a>
+                            <a v-if="!isReadOnly" href="javascript:void(0)" @click.prevent="removeBox(bv)" class="btn btn-xs btn-danger text-light" title="Remove Box"><i class="fas fa-times"></i>&nbsp;Remove</a>
+                            <a href="javascript:void(0)" @click.prevent="boxDashboard(bv)" class="btn btn-xs btn-primary text-light" title="Go to Box Dashboard"><i class="fas fa-vials"></i>&nbsp;Dashboard</a>
                         </td>
                     </tr>
                     </tbody>

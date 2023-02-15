@@ -25,6 +25,10 @@ try {
     else if ($_REQUEST['action'] == 'initialize-report-dashboard') {
         $module->initializeReportDashboard($system_config);
     }
+    // action: 'get-specimen-report-data'
+    else if ($_REQUEST['action'] == 'get-specimen-report-data') {
+        $module->handleGetSpecimenReportData($system_config);
+    }
     // action: 'search-plate'
     else if ($_POST['action'] == 'search-plate') {
         if (isset($_POST['include_specimens'])) {

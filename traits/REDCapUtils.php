@@ -28,7 +28,7 @@ trait REDCapUtils {
                 ],
                 "date_field_formats" => [
                     "date_mdy" => "m/d/Y",
-                    "datetime_mdy" => "m/d/Y G:i"
+                    "datetime_mdy" => "m/d/Y H:i"
                 ],
                 "unstructured_field_types" => [
                     "text",
@@ -191,6 +191,30 @@ trait REDCapUtils {
     }
 
     /**
+     * Splice an associative array to preserve the replacement array keys.
+     *
+     * Removes the elements designated by offset & length and replaces them
+     * with the elements of replacement array.
+     * @param $array array
+     * @param $offset int
+     * @param $length int
+     * @param $replacement array
+     * @return array Returns an array consisting of the extracted elements.
+     */
+    function array_splice_assoc(array &$array, int $offset, int $length, array $replacement = []): array
+    {
+        // let's grab the removed elements to mirror the normal array_splice output
+        $removed = array_slice($array, $offset, $length, true);
+        // the 'before' slice, before our $offset
+        $before_slice = array_slice($array, 0, $offset, true);
+        // the 'after' slice, after our $offset
+        $after_slice = array_slice($array, $offset+$length, count($array), true);
+        // merge our replacement in-between the 2 slices
+        $array = array_merge($before_slice, $replacement, $after_slice);
+        return $removed;
+    }
+
+    /**
      * @param $Proj \Project
      * @param $field_name string
      * @param $field_value string|array
@@ -199,10 +223,12 @@ trait REDCapUtils {
      */
     public function getFieldDisplayValue($Proj, $field_name, $field_value) {
 
-        $field_result = [];
+        $field_result = [
+            "value" => $field_value
+        ];
         $metadata = $this->getMyMetadata($Proj->project_id);
 
-        // if I can't find the field in the project, just return an empty array
+        // if I can't find the field in the project, just return the original value
         if (!isset($metadata["fields"][$field_name])) {
             return $field_result;
         }
@@ -275,6 +301,15 @@ trait REDCapUtils {
         } else {
             echo "<pre>$content</pre>";
         }
+    }
+
+    /**
+     * Outputs the module directory folder name into the page footer, for easy reference.
+     * @return void
+     */
+    public function outputModuleVersionJS() {
+        $module_info = $this->getModuleName() . " (" . $this->VERSION . ")";
+        echo "<script>$(function() { $('div#south table tr:first td:last, #footer').prepend('<span>$module_info</span>&nbsp;|&nbsp;'); });</script>";
     }
 
     public function addTime($key = null) {

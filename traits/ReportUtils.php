@@ -14,16 +14,22 @@ trait ReportUtils {
             "errors" => []
         ];
         try {
-            // prep some helper info for validation
-            $response["config"] = [
-                "specimen_fields" => array_keys($this->getSpecimenFields(true))
-            ];
-            $specimens = $this->getAllSpecimens($system_config);
-            $response["specimens"] = $specimens;
+            // TODO: placeholder for now
         } catch (Exception $ex) {
             $response["errors"][] = $ex->getMessage();
         }
         // send it back!
         $this->sendResponse($response);
+    }
+
+    function handleGetSpecimenReportData($system_config) {
+        try {
+            $response = [
+                "data" => $this->getAllSpecimens($system_config)
+            ];
+            $this->sendResponse($response);
+        } catch (Exception $ex) {
+            $this->sendError($ex->getMessage());
+        }
     }
 }

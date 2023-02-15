@@ -24,7 +24,7 @@ try {
     $csv_data = [];
 
     // get the data
-    [ $shipment, $data ] = $module->getShipmentManifestData($_GET["id"]);
+    [ $shipment, $data ] = $module->getShipmentManifestData($_GET["id"], $system_config);
 
     // prep some values
     $sample_type = $module->getFieldDisplayValue($module->getShipmentProject(), "sample_type", $shipment["sample_type"])["value"];
@@ -42,8 +42,9 @@ try {
 
     // dump data to csv
     $temp_path = $module->generateTempFileName(5);
+    $temp_output = fopen($temp_path, 'c');
     // headers
-    $csv_data[] = implode(',', array_map(function($k) use ($sample_type, $sample_unit) {
+    $file_headers = array_map(function($k) use ($sample_type, $sample_unit) {
         $tmp = $k;
         switch ($k) {
             case "volume":
@@ -51,15 +52,18 @@ try {
                 break;
         }
         return $tmp;
-    }, array_keys(reset($data))));
+    }, array_keys(reset($data)));
+    fputcsv($temp_output, $file_headers);
     // rows
     foreach ($data as $i => $row) {
-        $csv_data[] = implode(',', $row);
+        fputcsv($temp_output, $row);
     }
-    file_put_contents($temp_path, implode("\r\n", $csv_data));
-
+    // close the stream
+    fclose($temp_output);
+    // filename
+    $file_name = "manifest-" . date("Y-m-d-His") . ".csv";
     // output file
-    $module->downloadFile($temp_path, "manifest.csv");
+    $module->downloadFile($temp_path, $file_name);
 } catch (Exception $ex) {
     $module->sendError($ex->getMessage());
 }

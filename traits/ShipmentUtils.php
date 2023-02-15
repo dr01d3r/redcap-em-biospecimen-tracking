@@ -102,7 +102,7 @@ trait ShipmentUtils {
      * @return array|void
      * @throws Exception
      */
-    function getShipmentManifestData($shipment_id) {
+    function getShipmentManifestData($shipment_id, array $system_config) {
         // TODO for now just exit if a shipment_id is invalid
         if (!is_numeric($shipment_id)) return;
         /*
@@ -211,6 +211,8 @@ AND d1.field_name = 'box_record_id'
         foreach ($shipment_data as $key => $val) {
             $shipment_data[$key] = $this->getFieldDisplayValue($this->getShipmentProject(), $key, $val)["value"];
         }
+        // let's manually inject the study_name value to be the 2nd column in the output
+        $this->array_splice_assoc($shipment_data, 1, 0, [ "study_name" => $system_config["study_name"] ]);
 
         foreach($boxes as $i => $box) {
             // prep box fields

@@ -1,6 +1,6 @@
 <template>
     <b-modal
-        size="lg"
+        size="xl"
         title="Edit Specimen"
         id="specimen-edit-modal"
         ref="specimenEditModal"
