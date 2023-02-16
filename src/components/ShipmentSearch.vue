@@ -6,21 +6,35 @@
                opacity="0.95"
                :show="isOverlayed"
                rounded="sm">
-        <b-pagination
-                v-model="currentPage"
-                :total-rows="rows"
-                :per-page="perPage"
-                aria-controls="shipment-search"
-        ></b-pagination>
+        <div class="row">
+            <div class="col">
+                <b-pagination
+                    v-model="currentPage"
+                    :total-rows="totalRows"
+                    :per-page="perPage"
+                    aria-controls="shipment-search"
+                ></b-pagination>
+            </div>
+            <div class="col-auto">
+                <b-form-input
+                    id="filter-input"
+                    v-model="filter"
+                    type="search"
+                    placeholder="Type to Search"
+                />
+            </div>
+        </div>
         <b-table
             id="shipment-search"
             :items="sortedShipments"
             :fields="shipmentFields"
+            :filter="filter"
             :per-page="perPage"
             :current-page="currentPage"
             :select-mode="selectMode"
             selectable
             @row-selected="shipmentSelected"
+            @filtered="onFiltered"
             responsive
         ></b-table>
 
@@ -49,17 +63,25 @@
                 debugMsg: null,
                 isOverlayed: false,
                 shipments: [],
-                perPage: 2,
+                perPage: 25,
+                totalRows: 0,
                 currentPage: 1,
+                filter: null,
                 selectMode: 'single'
+            }
+        },
+        watch: {
+            shipments: function(val) {
+                // update helper fields
+                this.totalRows = this.shipments.length ?? 0;
             }
         },
         computed: {
             sortedShipments: function() {
                 if (this.shipments.sort) {
                     return this.shipments.sort((a, b) => {
-                        if (a.shipment_date < b.shipment_date) { return -1; }
-                        if (a.shipment_date > b.shipment_date) { return 1; }
+                        if (a.record_id < b.record_id) { return -1; }
+                        if (a.record_id > b.record_id) { return 1; }
                         return 0;
                     });
                 }
@@ -73,9 +95,6 @@
             },
             debugOutput: function() {
                 return JSON.stringify(this.debugMsg, null, '\t');
-            },
-            rows: function() {
-                return this.shipments.length
             }
         },
         methods: {
@@ -125,6 +144,11 @@
                 if (s && s.shipment_dashboard_url) {
                     window.location.href = s.shipment_dashboard_url;
                 }
+            },
+            onFiltered(filteredItems) {
+                // Trigger pagination to update the number of buttons/pages due to filtering
+                this.totalRows = filteredItems.length;
+                this.currentPage = 1;
             }
         },
         mounted() {

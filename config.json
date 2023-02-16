@@ -14,7 +14,7 @@
       "institution": "Marshfield Clinic Research Institute"
     }
   ],
-  "framework-version": 11,
+  "framework-version": 10,
   "permissions": [
     "redcap_data_entry_form",
     "redcap_every_page_top"

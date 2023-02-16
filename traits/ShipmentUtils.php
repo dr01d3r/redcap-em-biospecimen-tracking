@@ -11,7 +11,7 @@ trait ShipmentUtils {
         if ($exclude_system_fields === true) {
             $fields = array_filter($fields,
                 function($k) {
-                    return $k !== "record_id" && !$this->getShipmentProject()->isFormStatus($k);
+                    return !$this->getShipmentProject()->isFormStatus($k);
                 }, ARRAY_FILTER_USE_KEY);
         }
         return $fields;
@@ -188,6 +188,7 @@ AND d1.field_name = 'box_record_id'
 
         // lets build this dataset!
         $shipment_fields = array_fill_keys([
+            "shipment_name",
             "shipment_date",
             "sample_type",
             "shipment_to",

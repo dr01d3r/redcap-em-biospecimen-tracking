@@ -44,8 +44,7 @@ class BiospecimenTracking extends AbstractExternalModule {
                 "box_record_id"
             ],
             "shipment" => [
-                "record_id",
-                "shipment_date"
+                "record_id"
             ]
         ],
         "plate_size_map" => [
