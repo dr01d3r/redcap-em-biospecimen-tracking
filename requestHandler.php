@@ -1,5 +1,5 @@
 <?php
-/** @var \ORCA\BiospecimenTracking\BiospecimenTracking $module */
+/** @var \ORCA\OrcaSpecimenTracking\OrcaSpecimenTracking $module */
 
 try {
     // get system configuration
@@ -56,6 +56,10 @@ try {
     // action: 'search-shipments'
     else if ($_POST['action'] == 'search-shipments') {
         $module->searchShipments();
+    }
+    // action: 'complete-shipment'
+    else if ($_POST['action'] == 'complete-shipment') {
+        $module->handleCompleteShipment($_POST['shipment_record_id'], $system_config);
     }
     // action: 'update-box-shipment'
     else if ($_POST['action'] == 'update-box-shipment') {

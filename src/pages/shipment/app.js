@@ -23,4 +23,4 @@ Vue.mixin(mixin);
 //  Create Vue Instance and mount our module page container
 new Vue({
     render: h => h(App)
-}).$mount('#ORCA_BIOSPECIMEN_TRACKING');
+}).$mount('#ORCA_SPECIMEN_TRACKING');

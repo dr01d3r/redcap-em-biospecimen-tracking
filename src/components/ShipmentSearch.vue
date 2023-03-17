@@ -101,11 +101,11 @@
             async update() {
                 this.isOverlayed = true;
                 const data = {
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: 'search-shipments'
                 };
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)

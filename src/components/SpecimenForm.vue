@@ -709,11 +709,11 @@
                     this.focusOverride = true;
                 }
                 data = Object.assign({
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: action
                 }, data);
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)
@@ -750,12 +750,12 @@
                 this.focusOverride = true;
                 this.resetSpecimen();
                 const data = {
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: 'get-specimen',
                     specimen_record_id: record_id
                 };
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)
@@ -807,12 +807,12 @@
                 this.focusOverride = true;
                 this.resetSpecimen(true, true);
                 const data = {
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: 'search-specimen',
                     search_value: search_value
                 };
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)
@@ -846,6 +846,15 @@
                             Object.assign(this.vuelidateExternalResults, {
                                 specimen: {
                                     name: [ 'Cannot process specimen as it already exists on this box!' ]
+                                }
+                            });
+                            this.$nextTick(() => {
+                                this.v$.specimen.name.$validate();
+                            });
+                        } else if (data.plate.box_status === 'closed') {
+                            Object.assign(this.vuelidateExternalResults, {
+                                specimen: {
+                                    name: [ 'Cannot process specimen because it exists on a closed box!' ]
                                 }
                             });
                             this.$nextTick(() => {
@@ -1118,13 +1127,13 @@
                 this.isOverlayed = true;
                 // build data
                 const data = {
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: 'save-specimen',
                     specimen: specimen
                 };
                 // submit requests
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)
@@ -1190,7 +1199,7 @@
                         })
                         .then(value => {
                             if (value === true) {
-                                const pfx = `[${DateTime.now().toFormat(this.luxonDateFormatFrom)}][${OrcaBiospecimenTracking().userid}]`;
+                                const pfx = `[${DateTime.now().toFormat(this.luxonDateFormatFrom)}][${OrcaSpecimenTracking().userid}]`;
                                 let comments = [];
                                 for (const c of Object.values(this.warnings)) {
                                     comments.push(`${pfx} - ${c}`);

@@ -83,6 +83,7 @@
                             ></specimen-form>
                         </template>
                         <b-alert variant="warning" class="border border-warning mt-3" v-if="isPlateFull" show>Specimen Entry Disabled!  The box is full.</b-alert>
+                        <b-alert variant="warning" class="border border-warning mt-3" v-if="isPlateStatusClosed" show><strong>NOTICE:</strong> This box is CLOSED, and as such, has been put into a read-only state. </b-alert>
                     </div>
                     <template v-if="plate && config && config.plate_size && config.alphabet">
                         <div class="col-auto border-left border-start">
@@ -355,11 +356,14 @@
             isReadOnly: function() {
                 return this.forceReadOnly || !this.isObjectEmpty(this.errors);
             },
+            isPlateStatusClosed: function() {
+                return this.plate && this.plate.box_status === 'closed';
+            },
             canEnterSpecimens: function() {
-                return !this.isReadOnly && !this.isPlateFull;
+                return !this.isReadOnly && !this.isPlateFull && !this.isPlateStatusClosed;
             },
             canEditSpecimens: function() {
-                return !this.isReadOnly;
+                return !this.isReadOnly && !this.isPlateStatusClosed;
             }
         },
         methods: {
@@ -368,11 +372,11 @@
                     this.isOverlayed = true;
                 }
                 data = Object.assign({
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: action
                 }, data);
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)
@@ -408,12 +412,12 @@
                     this.$refs.specimenAddForm.resetSpecimen();
                 }
                 const data = {
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: 'search-plate',
                     search_value: search_value
                 };
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)
@@ -488,7 +492,7 @@
             async initializeDashboard() {
                 this.isOverlayed = true;
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     params: {
                         action: 'initialize-box-dashboard',
                         id: this.qs_get('id')

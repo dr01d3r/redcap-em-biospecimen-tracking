@@ -1,6 +1,6 @@
 {
-  "name": "Biospecimen Tracking",
-  "namespace": "ORCA\\BiospecimenTracking",
+  "name": "Orca Specimen Tracking",
+  "namespace": "ORCA\\OrcaSpecimenTracking",
   "description": "Helps manage the tracking of specimens to boxes, using specific configurations and validation based on the box type.",
   "authors": [
     {

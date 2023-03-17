@@ -1,6 +1,6 @@
 {
-  "name": "biospecimen_tracking_v1.0.1",
-  "version": "1.0.1",
+  "name": "orca_specimen_tracking_v1.0.0",
+  "version": "1.0.0",
   "description": "REDCap External Module for Biospecimen Tracking",
   "main": "index.js",
   "scripts": {

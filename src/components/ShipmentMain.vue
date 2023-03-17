@@ -11,12 +11,22 @@
         </template>
 
         <div class="projhdr">
-            <i class="fas fa-truck text-dark"></i>&nbsp;Shipment Dashboard
+            <i class="fas fa-truck text-dark"></i>&nbsp;{{ shipmentTitle }}
             <template v-if="config.shipment_record_home_url != null">
                 <span>&nbsp;|&nbsp;</span>
                 <a :href="config.shipment_record_home_url" class="text-primary ml-1"><i class="fas fa-share"></i>&nbsp;Record Home</a>
             </template>
+            <template v-if="canCreateNewShipment">
+                <span>&nbsp;|&nbsp;</span>
+                <a :href="config.new_shipment_url" class="text-success font-weight-normal"><i class="fas fa-plus"></i>&nbsp;New Shipment</a>
+            </template>
+            <template v-if="canSearchShipments">
+                <span>&nbsp;|&nbsp;</span>
+                <a href="#" @click.prevent="searchShipments()" class="text-primary font-weight-normal"><i class="fas fa-search"></i>&nbsp;Search Shipments</a>
+            </template>
         </div>
+
+        <div v-if="isShipmentComplete" class="alert alert-success">This Shipment is marked Complete.</div>
 
         <template v-if="!isObjectEmpty(errors)">
             <div class="alert alert-danger p-4">
@@ -36,18 +46,8 @@
             <div class="card-header">
                 <template v-if="shipment">
                     <div class="row">
-                        <div class="col">
-                            <h1 class="lead mb-0">
-                                Scan Box Names Here
-                                <template v-if="showButtonNewShipment">
-                                    <span>&nbsp;|&nbsp;</span>
-                                    <a :href="config.new_shipment_url" class="text-success font-weight-normal"><i class="fas fa-plus"></i>&nbsp;New Shipment</a>
-                                </template>
-                                <template v-if="showButtonSearchShipments">
-                                    <span>&nbsp;|&nbsp;</span>
-                                    <a href="#" @click.prevent="searchShipments()" class="text-primary font-weight-normal"><i class="fas fa-search"></i>&nbsp;Search Shipments</a>
-                                </template>
-                            </h1>
+                        <div class="col border-right" v-if="canModifyShipment">
+                            <h1 class="lead mb-0">Scan Box Names Here</h1>
                             <hr class="my-1" />
                             <b-form-input
                                     ref="box_name_input"
@@ -67,7 +67,7 @@
                                 </ul>
                             </b-alert>
                         </div>
-                        <div class="col-4 border-left">
+                        <div class="col-4">
                             <h1 class="lead mb-0">Shipment Details</h1>
                             <dl class="row">
                                 <template v-for="(v, k) in config.shipment_fields">
@@ -90,7 +90,7 @@
                     <span v-if="boxCount">
                         ({{ boxCount }})
                     </span>
-                    <template v-if="showManifestExport">
+                    <template v-if="canExportManifest">
                         <span>&nbsp;|&nbsp;</span>
                         <a :href="this.config.manifest_export_url" class="text-primary font-weight-normal"><i class="fas fa-file-export"></i>&nbsp;Export Manifest</a>
                     </template>
@@ -102,6 +102,7 @@
                         <th scope="col">Box Name</th>
                         <th scope="col">Box Type</th>
                         <th scope="col">Sample Type</th>
+                        <th scope="col">Status</th>
                         <th scope="col">Actions</th>
                     </tr>
                     </thead>
@@ -111,13 +112,15 @@
                         <td>{{ bv['box_name'] }}</td>
                         <td>{{ bv['box_type'] }}</td>
                         <td>{{ bv['sample_type'] }}</td>
+                        <td>{{ bv['box_status'] }}</td>
                         <td>
-                            <a v-if="!isReadOnly" href="javascript:void(0)" @click.prevent="removeBox(bv)" class="btn btn-xs btn-danger text-light" title="Remove Box"><i class="fas fa-times"></i>&nbsp;Remove</a>
+                            <a v-if="canModifyShipment" href="javascript:void(0)" @click.prevent="removeBox(bv)" class="btn btn-xs btn-danger text-light" title="Remove Box"><i class="fas fa-times"></i>&nbsp;Remove</a>
                             <a href="javascript:void(0)" @click.prevent="boxDashboard(bv)" class="btn btn-xs btn-primary text-light" title="Go to Box Dashboard"><i class="fas fa-vials"></i>&nbsp;Dashboard</a>
                         </td>
                     </tr>
                     </tbody>
                 </table>
+                <button v-if="showButtonCompleteShipment" type="button" class="btn btn-success" @click.prevent="tryCompleteShipment">Complete Shipment</button>
             </div>
         </div>
 
@@ -194,20 +197,38 @@
                     return null;
                 }
             },
+            shipmentTitle: function() {
+                if (this.shipment) {
+                    return this.shipment.shipment_name;
+                }
+                else {
+                    return 'Shipment Dashboard'
+                }
+            },
             boxCount: function() {
                 if (this.shipment && this.boxes.length) {
                     return this.boxes.length;
                 }
             },
-            showButtonNewShipment: function() {
+            canCreateNewShipment: function() {
+                // true unless config is in a bad state
                 return !this.isReadOnly && this.config && this.config.new_shipment_url;
             },
-            showButtonSearchShipments: function() {
+            showButtonCompleteShipment: function() {
+                return !this.isReadOnly && this.shipment &&!this.isShipmentComplete;
+            },
+            canSearchShipments: function() {
                 // true unless config is in a bad state
                 return !this.isReadOnly;
             },
-            showManifestExport: function() {
+            canExportManifest: function() {
                 return !this.isReadOnly && this.config && this.config.manifest_export_url;
+            },
+            canModifyShipment: function() {
+                return !this.isReadOnly && this.shipment && this.shipment.shipment_status !== "complete";
+            },
+            isShipmentComplete: function() {
+                return this.shipment && this.shipment.shipment_status === "complete";
             },
             isReadOnly: function() {
                 return this.forceReadOnly || !this.isObjectEmpty(this.errors);
@@ -220,7 +241,7 @@
             async initializeDashboard() {
                 this.isOverlayed = true;
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     params: {
                         action: 'initialize-shipment-dashboard',
                         id: this.qs_get('id')
@@ -233,7 +254,7 @@
                     this.shipment_details = response.data.shipment_details ?? null;
                     this.boxes = response.data.boxes ?? [];
                     // debug
-                    // this.debugMsg = response.data;
+                    // this.debugMsg = this.shipment;
                 })
                 .catch(e => {
                     let errorMsg = 'An unknown error occurred';
@@ -261,13 +282,13 @@
             async searchBoxName(search_value) {
                 this.isOverlayed = true;
                 const data = {
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: 'search-plate',
                     search_value: search_value,
                     include_specimens: false
                 };
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)
@@ -300,14 +321,21 @@
                 if (data.plate) {
                     // verify it isn't already tied to a shipment
                     if (this.isEmpty(data.plate.shipment_record_id)) {
-                        // sample_type must match
-                        if (this.shipment.sample_type === data.plate.sample_type) {
-                            this.addBox(data.plate);
-                        } else {
-                            // sample_type mismatch
+                        if (data.plate.box_status === 'closed') {
+                            // box is in a closed status
                             v = {
-                                box_name: [ `Sample Type Mismatch - cannot add '${data.plate.sample_type}' box to '${this.shipment.sample_type}' shipment!` ]
+                                box_name: [ `Box is Closed - cannot add a closed box to the shipment!` ]
                             };
+                        } else {
+                            // sample_type must match
+                            if (this.shipment.sample_type === data.plate.sample_type) {
+                                this.addBox(data.plate);
+                            } else {
+                                // sample_type mismatch
+                                v = {
+                                    box_name: [ `Sample Type Mismatch - cannot add '${data.plate.sample_type}' box to '${this.shipment.sample_type}' shipment!` ]
+                                };
+                            }
                         }
                     } else {
                         if (data.plate.shipment_record_id === this.shipment.record_id) {
@@ -340,6 +368,42 @@
             },
             searchShipments: function() {
                 this.$bvModal.show('shipment-search-modal');
+            },
+            tryCompleteShipment: function() {
+                const h = this.$createElement;
+                const ack = h('div', { }, [
+                    h('div', 'You are about to complete the following shipment:'),
+                    h('div', [
+                        h('div', { class: [ 'p-2 my-2 border-left border-start border-success font-weight-normal' ] }, this.shipmentTitle)
+                    ]),
+                    h('div', `Please click 'Confirm' to complete the process.`)
+                ]);
+                this.$bvModal.msgBoxConfirm([ack], {
+                    title: 'Completing the Shipment',
+                    headerClass: 'bg-success',
+                    headerTextVariant: 'light',
+                    bodyClass: 'lead',
+                    footerClass: 'alert-success',
+                    okVariant: 'success',
+                    okTitle: 'Confirm',
+                    cancelTitle: 'Cancel',
+                    hideHeaderClose: false,
+                    centered: true
+                })
+                .then(value => {
+                    if (value === true) {
+                        this.completeShipment(this.shipment.record_id);
+                    } else {
+                        this.resetFocus();
+                    }
+                })
+                .catch(error => {
+                    this.toast(
+                        error,
+                        'Completing Shipment Failed',
+                        'danger'
+                    );
+                });
             },
             addBox: function(box) {
                 const h = this.$createElement;
@@ -413,17 +477,58 @@
                     window.location.href = `${this.config.box_dashboard_base_url}&id=${box.record_id}`;
                 }
             },
+            async completeShipment(shipment_record_id) {
+                // complete-shipment
+                this.isOverlayed = true;
+                const data = {
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
+                    action: 'complete-shipment',
+                    shipment_record_id: shipment_record_id
+                };
+                this.axios({
+                    url: OrcaSpecimenTracking().url,
+                    method: 'post',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    data: qs.stringify(data)
+                })
+                .then(response => {
+                    this.toast(
+                        'Shipment Closed Successfully',
+                        'Save Successful',
+                        'success'
+                    );
+                    // rebuild the dashboard
+                    this.initializeDashboard();
+                })
+                .catch(e => {
+                    let errorMsg = 'An unknown error occurred';
+                    if (e.response && e.response.data) {
+                        errorMsg = e.response.data;
+                    }
+                    this.toast(
+                        errorMsg,
+                        'Error while completing Shipment',
+                        'danger'
+                    );
+                })
+                .finally(() => {
+                    setTimeout(() => {
+                        this.isOverlayed = false;
+                        this.resetFocus();
+                    }, 250);
+                });
+            },
             async updateBoxShipment(box_record_id, shipment_record_id) {
                 // update-box-shipment
                 this.isOverlayed = true;
                 const data = {
-                    redcap_csrf_token: OrcaBiospecimenTracking().redcap_csrf_token,
+                    redcap_csrf_token: OrcaSpecimenTracking().redcap_csrf_token,
                     action: 'update-box-shipment',
                     box_record_id: box_record_id,
                     shipment_record_id: shipment_record_id
                 };
                 this.axios({
-                    url: OrcaBiospecimenTracking().url,
+                    url: OrcaSpecimenTracking().url,
                     method: 'post',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     data: qs.stringify(data)

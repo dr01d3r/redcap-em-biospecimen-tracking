@@ -1,6 +1,6 @@
 <?php
 // Set the namespace defined in your config file
-namespace ORCA\BiospecimenTracking;
+namespace ORCA\OrcaSpecimenTracking;
 
 // The next 2 lines should always be included and be the same in every module
 use ExternalModules\AbstractExternalModule;
@@ -16,10 +16,10 @@ require_once 'traits/REDCapUtils.php';
 require_once 'traits/RequestHandlers.php';
 
 /**
- * Class BiospecimenTracking
- * @package ORCA\BiospecimenTracking
+ * Class OrcaSpecimenTracking
+ * @package ORCA\OrcaSpecimenTracking
  */
-class BiospecimenTracking extends AbstractExternalModule {
+class OrcaSpecimenTracking extends AbstractExternalModule {
     use ModuleUtils;
     use PlateUtils;
     use SpecimenUtils;

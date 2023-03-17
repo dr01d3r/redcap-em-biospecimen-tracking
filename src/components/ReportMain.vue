@@ -90,7 +90,7 @@
                 // DataTable initialization
                 this.dataTable = $("#report-table").DataTable({
                     // iDisplayLength: this.perPage,
-                    ajax: OrcaBiospecimenTracking().url + '&action=get-specimen-report-data',
+                    ajax: OrcaSpecimenTracking().url + '&action=get-specimen-report-data',
                     deferRender: true,
                     columns: [
                         { data: 'box_name.value' },

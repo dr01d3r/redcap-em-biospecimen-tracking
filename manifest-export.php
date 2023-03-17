@@ -1,5 +1,5 @@
 <?php
-/** @var \ORCA\BiospecimenTracking\BiospecimenTracking $module */
+/** @var \ORCA\OrcaSpecimenTracking\OrcaSpecimenTracking $module */
 
 try {
     // get system configuration

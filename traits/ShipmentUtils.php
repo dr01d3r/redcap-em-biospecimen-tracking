@@ -1,11 +1,19 @@
 <?php
-/** @var \ORCA\BiospecimenTracking\BiospecimenTracking $this */
-namespace ORCA\BiospecimenTracking;
+/** @var \ORCA\OrcaSpecimenTracking\OrcaSpecimenTracking $this */
+namespace ORCA\OrcaSpecimenTracking;
 
 use Exception;
 
+/**
+ *
+ */
 trait ShipmentUtils {
 
+    /**
+     * @param $exclude_system_fields
+     * @return array
+     * @throws Exception
+     */
     function getShipmentFields($exclude_system_fields = true) {
         $fields = array_column($this->getShipmentProject()->metadata, "element_label", "field_name");
         if ($exclude_system_fields === true) {
@@ -17,6 +25,10 @@ trait ShipmentUtils {
         return $fields;
     }
 
+    /**
+     * @return string
+     * @throws Exception
+     */
     function getNewShipmentURL() {
         // prep new shipment url
         $new_shipment_id = \DataEntry::getAutoId($this->getShipmentProject()->project_id);
@@ -49,6 +61,10 @@ trait ShipmentUtils {
         return [];
     }
 
+    /**
+     * @return array
+     * @throws Exception
+     */
     function getShipments() {
         $project = $this->getShipmentProject();
         // get all plate info by record
@@ -73,16 +89,17 @@ trait ShipmentUtils {
     /**
      * @param $shipment_id
      * @param string $regex
+     * @param array|null $fields Fields to pull.  By default, pulls all box fields.
      * @return array
      * @throws Exception
      */
-    function getBoxesByShipment($shipment_id, string $regex = null) {
+    function getBoxesByShipment($shipment_id, string $regex, array $fields = null) {
         if (!is_numeric($shipment_id)) return [];
         $plate_project = $this->getPlateProject();
         // get all plate info by record
         $records = \REDCap::getData([
             "project_id" => $plate_project->project_id,
-            "fields" => $this->_config["fields"]["box"],
+            "fields" => $fields ?? $this->_config["fields"]["box"],
             "filterLogic" => "[shipment_record_id] = $shipment_id"
         ]);
         return array_values(array_map(function($record) use ($plate_project, $regex) {
@@ -99,6 +116,7 @@ trait ShipmentUtils {
 
     /**
      * @param $shipment_id
+     * @param array $system_config
      * @return array|void
      * @throws Exception
      */
@@ -229,8 +247,87 @@ AND d1.field_name = 'box_record_id'
         return [ $shipment, $result ];
     }
 
+    /**
+     * @param $shipment_record_id
+     * @param string $status
+     * @param array $system_config
+     * @return bool|mixed Returns true if successful, otherwise an array of errors
+     * @throws Exception
+     */
+    function updateShipmentStatus($shipment_record_id, string $status, array $system_config) {
+        if (!is_numeric($shipment_record_id)) {
+            $this->sendError("Cannot update shipment status.  The [shipment_record_id] is invalid or missing.");
+        }
+        // ensure the shipment exists
+        $shipment = $this->getShipment($shipment_record_id);
+        if (empty($shipment)) {
+            $this->sendError("Cannot update shipment status.  No shipment exists with [record_id]=$shipment_record_id.");
+        }
+        if ($shipment[$this->getShipmentProject()->firstEventId]["shipment_status"] === $status) {
+            $this->sendError("Aborting request.  Shipment status is already '$status'.");
+        }
+        // validation is good, lets complete this shipment!
+        $shipment_save_data = [
+            $shipment_record_id => [
+                $this->getShipmentProject()->firstEventId => [
+                    "shipment_status" => $status
+                ]
+            ]
+        ];
+        // save it, ensuring overwrite behavior is set
+        $save_result = \REDCap::saveData(
+            $this->getShipmentProject()->project_id,
+            "array",
+            $shipment_save_data,
+            "overwrite"
+        );
+        // handle any errors from the save attempt
+        if (!empty($save_result["errors"])) {
+            $this->log("ERROR: " . json_encode($save_result["errors"]), [ "project_id" => $this->getShipmentProject()->project_id ]);
+            return $save_result["errors"];
+        }
+        return true;
+    }
+
+    /**
+     * @param $shipment_record_id
+     * @param string $status
+     * @param array $system_config
+     * @return bool|mixed Returns true if successful, otherwise an array of errors
+     * @throws Exception
+     */
+    function updateBoxStatusByShipmentId($shipment_record_id, string $status, array $system_config) {
+        if (!is_numeric($shipment_record_id)) {
+            $this->sendError("Cannot complete shipment.  The [shipment_record_id] is invalid or missing.");
+        }
+        $box_save_data = [];
+        // get the boxes
+        $boxes = $this->getBoxesByShipment($shipment_record_id, $system_config["box_name_regex"], [ "record_id" ]);
+        // update boxes to the 'closed' status
+        foreach ($boxes as $box) {
+            $box_save_data[$box["record_id"]][$this->getPlateProject()->firstEventId]["box_status"] = $status;
+        }
+        // save box updates, ensuring overwrite behavior is set
+        $save_result = \REDCap::saveData(
+            $this->getPlateProject()->project_id,
+            "array",
+            $box_save_data,
+            "overwrite"
+        );
+        // handle any errors from the save attempt
+        if (!empty($save_result["errors"])) {
+            $this->log("ERROR: " . json_encode($save_result["errors"]), [ "project_id" => $this->getPlateProject()->project_id ]);
+            return $save_result["errors"];
+        }
+        return true;
+    }
+
     /* REQUEST HANDLERS */
 
+    /**
+     * @param $system_config
+     * @return void
+     */
     function handleInitializeShipmentDashboard($system_config) {
         $response = [
             "config" => [],
@@ -278,12 +375,17 @@ AND d1.field_name = 'box_record_id'
             }
             $this->addTime("initialization finished");
         } catch (Exception $ex) {
+            $this->log("ERROR: " . $ex->getMessage(), [ "project_id" => $this->getShipmentProject()->project_id ]);
             $response["errors"][] = $ex->getMessage();
         }
         // send it back!
         $this->sendResponse($response);
     }
 
+    /**
+     * @return void
+     * @throws Exception
+     */
     function handleSearchShipments() {
         $response = [
             "config" => [],
@@ -299,6 +401,45 @@ AND d1.field_name = 'box_record_id'
         $this->sendResponse($response);
     }
 
+    /**
+     * @param $shipment_record_id
+     * @param $system_config
+     * @return void
+     * @throws Exception
+     */
+    function handleCompleteShipment($shipment_record_id, $system_config) {
+        if (!is_numeric($shipment_record_id)) {
+            $this->sendError("Cannot complete shipment.  The [shipment_record_id] is invalid or missing.");
+        }
+        try {
+            // update shipment status
+            $shipment_save_result = $this->updateShipmentStatus($shipment_record_id, "complete", $system_config);
+            // handle any errors from the save attempt
+            if ($shipment_save_result !== true) {
+                $this->sendError($shipment_save_result);
+            }
+            // update the box status for boxes tied to this shipment
+            $box_save_result = $this->updateBoxStatusByShipmentId($shipment_record_id, "closed", $system_config);
+            if ($box_save_result !== true) {
+                // revert the shipment status change so this error can be more easily corrected
+                $this->updateShipmentStatus($shipment_record_id, "incomplete", $system_config);
+                $this->sendError($box_save_result);
+            }
+            // if we got this far, the process was successful
+            $this->sendResponse("Save successful");
+        } catch (Exception $ex) {
+            $this->log("ERROR: " . $ex->getMessage(), [ "project_id" => $this->getShipmentProject()->project_id ]);
+            $this->sendError($ex->getMessage());
+        }
+    }
+
+    /**
+     * @param $box_record_id
+     * @param $shipment_record_id
+     * @param $system_config
+     * @return void
+     * @throws Exception
+     */
     function handleUpdateBoxShipment($box_record_id, $shipment_record_id, $system_config) {
         if (!is_numeric($box_record_id)) {
             $this->sendError("Cannot update box/shipment.  The [box_record_id] is invalid or missing.");
@@ -338,6 +479,7 @@ AND d1.field_name = 'box_record_id'
             }
             $this->sendResponse("Save successful");
         } catch (Exception $ex) {
+            $this->log("ERROR: " . $ex->getMessage(), [ "project_id" => $this->getPlateProject()->project_id ]);
             $this->sendError($ex->getMessage());
         }
     }

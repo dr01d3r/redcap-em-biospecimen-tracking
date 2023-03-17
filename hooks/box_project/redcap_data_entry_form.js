@@ -1,6 +1,8 @@
 $(function() {
     // none of this matters if the target field name is not on the form
     if ($("input[name='box_name']").length !== 1) return;
+    // exit if the calculated source field also does not exist on the form
+    if ($("input[name='box_name_calc']").length !== 1) return;
     // disable autocomplete on this field
     $("input[name='box_name']").prop("autocomplete", "off");
     // define change handler for the form fields, so we can know indirectly when [box_name_calc] changes

@@ -1,6 +1,6 @@
 <?php
 
-namespace ORCA\BiospecimenTracking;
+namespace ORCA\OrcaSpecimenTracking;
 
 trait REDCapUtils {
 

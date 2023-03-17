@@ -1,6 +1,6 @@
 <?php
-/** @var \ORCA\BiospecimenTracking\BiospecimenTracking $this */
-namespace ORCA\BiospecimenTracking;
+/** @var \ORCA\OrcaSpecimenTracking\OrcaSpecimenTracking $this */
+namespace ORCA\OrcaSpecimenTracking;
 
 use Exception;
 

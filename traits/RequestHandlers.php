@@ -1,6 +1,6 @@
 <?php
-/** @var \ORCA\BiospecimenTracking\BiospecimenTracking $this */
-namespace ORCA\BiospecimenTracking;
+/** @var \ORCA\OrcaSpecimenTracking\OrcaSpecimenTracking $this */
+namespace ORCA\OrcaSpecimenTracking;
 
 trait RequestHandlers {
     /**
@@ -9,7 +9,8 @@ trait RequestHandlers {
      * @return string
      * @since 1.0.0
      */
-    public function getBaseUrl(){
+    public function getBaseUrl(): string
+    {
         return $this->getUrl("requestHandler.php");
     }
 
@@ -20,7 +21,8 @@ trait RequestHandlers {
      * @return void
      * @since 1.0.0
      */
-    public function sendResponse($response) {
+    public function sendResponse($response) : void
+    {
         header('Content-Type: application/json; charset=UTF-8');
         exit(json_encode($response));
     }
@@ -32,7 +34,8 @@ trait RequestHandlers {
      * @return void
      * @since 1.0.0
      */
-    public function sendError($error = "") {
+    public function sendError($error = "") : void
+    {
         header('Content-Type: application/json; charset=UTF-8');
         http_response_code(400);
         exit(json_encode($error));

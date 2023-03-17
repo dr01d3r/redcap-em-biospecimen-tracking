@@ -1,6 +1,6 @@
 <?php
-/** @var \ORCA\BiospecimenTracking\BiospecimenTracking $this */
-namespace ORCA\BiospecimenTracking;
+/** @var \ORCA\OrcaSpecimenTracking\OrcaSpecimenTracking $this */
+namespace ORCA\OrcaSpecimenTracking;
 
 use Exception;
 
@@ -85,7 +85,10 @@ trait PlateUtils {
         return [];
     }
 
-    function parsePlateName($name, $regex) : array {
+    function parsePlateName($name, $regex) : ?array {
+        if (empty($name) || empty($regex)) {
+            return null;
+        }
         $result = [];
         if (stripos($regex, '/') === false) $regex = "/$regex/";
         if (preg_match($regex, $name, $matches, PREG_UNMATCHED_AS_NULL)) {
@@ -170,7 +173,7 @@ trait PlateUtils {
     }
 
     function handleSearchPlate(string $search_value, array $system_config, bool $include_specimens = true) {
-        if ($search_value === null || empty($search_value)) {
+        if (empty($search_value)) {
             $this->sendError("No search value provided.");
         }
         try {

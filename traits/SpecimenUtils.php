@@ -1,6 +1,6 @@
 <?php
-/** @var \ORCA\BiospecimenTracking\BiospecimenTracking $this */
-namespace ORCA\BiospecimenTracking;
+/** @var \ORCA\OrcaSpecimenTracking\OrcaSpecimenTracking $this */
+namespace ORCA\OrcaSpecimenTracking;
 
 use Exception;
 
@@ -260,9 +260,9 @@ AND d1.value REGEXP ?";
             $patterns = [ "#\(\?\<participant_id\>.*?\)#", "(\?\<\w*\>)" ];
             $replacements = [ $participant_id, "" ];
             $sql_name_regex = preg_replace($patterns, $replacements, $system_config["specimen_name_regex"]);
-            // TODO debug
-            $response["specimen_name_regex"] = $system_config["specimen_name_regex"];
-            $response["sql_name_regex"] = $sql_name_regex;
+            // debug
+//            $response["specimen_name_regex"] = $system_config["specimen_name_regex"];
+//            $response["sql_name_regex"] = $sql_name_regex;
 
             $specimen_query_result = $this->query($sql,
                 [

@@ -1,11 +1,11 @@
 <?php
-/** @var \ORCA\BiospecimenTracking\BiospecimenTracking $module */
+/** @var \ORCA\OrcaSpecimenTracking\OrcaSpecimenTracking $module */
 
 $module->addTime();
 ?>
-    <div id="ORCA_BIOSPECIMEN_TRACKING"></div>
+    <div id="ORCA_SPECIMEN_TRACKING"></div>
     <script>
-        const OrcaBiospecimenTracking = function() {
+        const OrcaSpecimenTracking = function() {
             return {
                 url: '<?= $module->getBaseUrl() ?>',
                 redcap_csrf_token: <?= json_encode($module->getCSRFToken()) ?>
